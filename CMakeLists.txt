@@ -1,5 +1,9 @@
 cmake_minimum_required(VERSION 3.20)
 
+if(NOT DEFINED CMAKE_TOOLCHAIN_FILE)
+  set(CMAKE_TOOLCHAIN_FILE "${CMAKE_SOURCE_DIR}/cmake/toolchain-arm-none-eabi.cmake" CACHE FILEPATH "CMake toolchain file")
+endif()
+
 project(NanoVNA2Firmware LANGUAGES C CXX ASM)
 
 set(BOARDNAME "board_v2_plus4" CACHE STRING "Target board directory under firmware/boards")
@@ -46,6 +50,7 @@ configure_file(
 )
 
 add_custom_target(libopencm3_build
+  COMMAND make -C "${OPENCM3_DIR}" SRCLIBDIR="${OPENCM3_DIR}/lib" TARGETS=stm32/f1
   COMMAND make -C "${OPENCM3_DIR}" SRCLIBDIR="${OPENCM3_DIR}/lib" TARGETS=gd32/f3_nofpu
   BYPRODUCTS "${OPENCM3_LIB}"
   COMMENT "Building libopencm3"
