@@ -6,3 +6,6 @@ gitversion.hpp
 *.*~
 tags
 cscope.out
+
+/build/
+/build-*/

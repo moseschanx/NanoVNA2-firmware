@@ -46,7 +46,7 @@ configure_file(
 )
 
 add_custom_target(libopencm3_build
-  COMMAND make -C "${OPENCM3_DIR}"
+  COMMAND make -C "${OPENCM3_DIR}" SRCLIBDIR="${OPENCM3_DIR}/lib" TARGETS=gd32/f3_nofpu
   BYPRODUCTS "${OPENCM3_LIB}"
   COMMENT "Building libopencm3"
 )
