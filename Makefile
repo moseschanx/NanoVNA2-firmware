@@ -1,95 +1,41 @@
-# paths to libraries
-MCULIB         ?= mculib
-OPENCM3_DIR    ?= libopencm3
-BOOTLOAD_PORT       ?= /dev/ttyACM0
+BOARDNAME ?= board_v2_plus4
+EXTRA_CFLAGS ?= -DDISPLAY_ST7796
+LDSCRIPT ?= $(CURDIR)/ldscripts/gd32f303cc_with_bootloader_plus4.ld
+BOOTLOAD_PORT ?= /dev/ttyACM0
+BUILD_DIR ?= $(CURDIR)/build
+CMAKE_TOOLCHAIN_FILE ?= $(CURDIR)/cmake/toolchain-arm-none-eabi.cmake
 
-# device config
-BOARDNAME       ?= board_v2_plus4
-EXTRA_CFLAGS	?= -DDISPLAY_ST7796
+.PHONY: all configure build artifacts clean dist-clean flash bootload_firmware dfu
 
-DEVICE          = gd32f303cc_nofpu
+all: configure build artifacts
 
-OBJS += $(BOARDNAME)/board.o \
-    Font5x7.o \
-    Font7x13b.o \
-    command_parser.o \
-    common.o \
-    fft.o \
-    flash.o \
-    gain_cal.o \
-    gitversion.hpp \
-    globals.o \
-    ili9341.o \
-    main2.o \
-    numfont20x22.o \
-    plot.o \
-    sin_rom.o \
-    stream_fifo.o \
-    synthesizers.o \
-    ui.o \
-    uihw.o \
-    vna_measurement.o \
-    xpt2046.o \
-    $(NULL)
+configure:
+cmake -S $(CURDIR) -B $(BUILD_DIR) \
+-DCMAKE_TOOLCHAIN_FILE=$(CMAKE_TOOLCHAIN_FILE) \
+-DBOARDNAME=$(BOARDNAME) \
+-DEXTRA_CFLAGS="$(EXTRA_CFLAGS)" \
+-DLDSCRIPT=$(LDSCRIPT) \
+-DBOOTLOAD_PORT=$(BOOTLOAD_PORT)
 
-OBJS	+= \
-	$(MCULIB)/dma_adc.o \
-	$(MCULIB)/dma_driver.o \
-	$(MCULIB)/fastwiring.o \
-	$(MCULIB)/message_log.o \
-	$(MCULIB)/printf.o \
-	$(MCULIB)/si5351.o \
-	$(MCULIB)/usbserial.o
+build:
+cmake --build $(BUILD_DIR) --target binary.elf -- -j$${JOBS:-$$(nproc)}
 
-CFLAGS         += -O2 -g
-CPPFLAGS       += $(EXTRA_CFLAGS) -O2 -g -ffast-math -fstack-protector-strong -I$(BOARDNAME) -I$(MCULIB)/include -DMCULIB_DEVICE_STM32F103 -DSTM32F103 -DSTM32F1 -D_XOPEN_SOURCE=600
-CPPFLAGS       += -Wall -Wno-unused-function -Werror=implicit-fallthrough
-# CPPFLAGS      += -DDISPLAY_ST7796
-CPPFLAGS       +=  -ffunction-sections -fdata-sections
-# C++ only flags, CPP is used for both C++ and C files
-CXXFLAGS       += --std=c++17 -fno-exceptions -fno-rtti
+artifacts:
+cp $(BUILD_DIR)/binary.elf $(CURDIR)/binary.elf
+cp $(BUILD_DIR)/binary.hex $(CURDIR)/binary.hex
+cp $(BUILD_DIR)/binary.bin $(CURDIR)/binary.bin
 
-# safe g++ flags
-CPPFLAGS       += -funsigned-char -fwrapv -fno-delete-null-pointer-checks -fno-strict-aliasing
+flash: configure
+cmake --build $(BUILD_DIR) --target flash
 
-LDFLAGS        += -static -nostartfiles -Wl,--exclude-libs,libssp -Wl,--print-memory-usage
-LDFLAGS        += -Wl,--gc-sections
-LDLIBS         += -Wl,--start-group -lgcc -lnosys -Wl,--end-group -lm
+bootload_firmware: configure
+cmake --build $(BUILD_DIR) --target bootload_firmware
 
-GITVERSION      = "$(shell git log -n 1 --pretty=format:"git-%ad%h" --date=format:"%Y%m%d-")"
-GITURL          = "$(shell git config --get remote.origin.url)"
-
-# This is needed for the included genlink-config.mk to work properly
-LIBNAME         = opencm3_$(genlink_family)
-OPENCM3_LIB     = $(OPENCM3_DIR)/lib/lib$(LIBNAME).a
-
-include $(OPENCM3_DIR)/mk/genlink-config.mk
-include $(OPENCM3_DIR)/mk/gcc-config.mk
-
-LDSCRIPT=./gd32f303cc_with_bootloader_plus4.ld
-
-.PHONY: dist-clean clean all
-
-all: $(OPENCM3_LIB) binary.elf binary.hex binary.bin
-
-$(OPENCM3_LIB):
-	$(MAKE) -C $(OPENCM3_DIR)
-
-gitversion.hpp: .git/HEAD .git/index
-	echo "#define GITVERSION \"$(GITVERSION)\"" > $@
-	echo "#define GITURL \"$(GITURL)\"" >> $@
+dfu: bootload_firmware
 
 clean:
-	$(Q)$(RM) -rf binary.* *.o $(BOARDNAME)/*.o
+rm -f $(CURDIR)/binary.elf $(CURDIR)/binary.hex $(CURDIR)/binary.bin
+if [ -d "$(BUILD_DIR)" ]; then cmake --build $(BUILD_DIR) --target clean; fi
 
 dist-clean: clean
-	make -C $(OPENCM3_DIR) clean
-
-flash: binary.hex
-	./st-flash --reset --format ihex write binary.hex
-
-bootload_firmware dfu: binary.bin
-	python3 bootload_firmware.py --file $< --serial $(BOOTLOAD_PORT)
-
-include $(OPENCM3_DIR)/mk/genlink-rules.mk
-include $(OPENCM3_DIR)/mk/gcc-rules.mk
+rm -rf $(BUILD_DIR)
