@@ -25,8 +25,8 @@
 #include <libopencm3/stm32/flash.h>
 #include <libopencm3/stm32/rcc.h>
 #include <libopencm3/stm32/rtc.h>
-#include "../stream_fifo.hpp"
-#include "../command_parser.hpp"
+#include "../firmware/include/stream_fifo.hpp"
+#include "../firmware/include/command_parser.hpp"
 
 using namespace mculib;
 using namespace std;

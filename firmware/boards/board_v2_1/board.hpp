@@ -15,28 +15,32 @@
 #include <libopencm3/stm32/f1/dma.h>
 #include <libopencm3/stm32/adc.h>
 
-#include "../rfsw.hpp"
-#include "../common.hpp"
-#include "../xpt2046.hpp"
+#include "rfsw.hpp"
+#include "common.hpp"
+#include "xpt2046.hpp"
 
-#define BOARD_NAME "NanoVNA V2Plus4"
-#define BOARD_REVISION (4)
-#define BOARD_REVISION_MAGIC 0xdeadbabf
-#define USB_POINTS_MAX 65536
-// Plus4 not use ecal mode
-#define BOARD_DISABLE_ECAL
+#define BOARD_NAME "NanoVNA V2_1"
+#define BOARD_REVISION (1)
+#define BOARD_REVISION_MAGIC 0xdeadbabb
+
+//#define BOARD_DISABLE_ECAL
+
+#ifndef BOARD_DISABLE_ECAL
+#define USB_POINTS_MAX 1024
+#else
+#define USB_POINTS_MAX 65535
+#endif
 
 using namespace mculib;
 using namespace std;
 
-// This not used in Plus4 code, need only for bootloader
 #define BOARD_MEASUREMENT_NPERIODS_NORMAL		14
 #define BOARD_MEASUREMENT_NPERIODS_CALIBRATING	30
 #define BOARD_MEASUREMENT_ECAL_INTERVAL			 5
 #define BOARD_MEASUREMENT_NWAIT_SWITCH			 1
-#define BOARD_MEASUREMENT_MIN_CALIBRATION_AVG	10
-#define BOARD_MEASUREMENT_MAX_CALIBRATION_AVG	255
-#define BOARD_MEASUREMENT_FIRST_POINT_WAIT     128
+#define BOARD_MEASUREMENT_MIN_CALIBRATION_AVG	 4
+#define BOARD_MEASUREMENT_MAX_CALIBRATION_AVG  255
+#define BOARD_MEASUREMENT_FIRST_POINT_WAIT	   196
 
 namespace board {
 
@@ -74,7 +78,7 @@ namespace board {
 	extern uint32_t hseEstimateHz;
 
 	// All boards use a 24Mhz TCXO. It gives best phase noise with the ADF4350
-	static constexpr uint32_t xtalFreqHz = 24000000;
+	static constexpr uint32_t xtalFreqHz = 24000000; 
 	static constexpr freqHz_t DEFAULT_FREQ = 2600000000;
 
 	// ADC parameters, set by boardInit()
@@ -89,9 +93,12 @@ namespace board {
 
 	// ##### board peripherals #####
 
+	// baseband ADC
+
 	extern DMADriver dma;
 	extern DMAChannel dmaChannelADC;
 	extern DMAADC dmaADC;
+
 
 	// synthesizers
 
@@ -125,6 +132,8 @@ namespace board {
 
 	constexpr int si5351_rxPLL = 0, si5351_txPLL = 1;
 	constexpr int si5351_rxPort = 0, si5351_txPort = 2, si5351_passthruPort = -1;
+
+
 
 	// lcd display
 
@@ -172,8 +181,8 @@ namespace board {
 
 	// blink the status led
 	void ledPulse();
-	
-	int calculateSynthWaitAF(freqHz_t freqHz);
+
+	int calculateSynthWaitAF( freqHz_t freqHz);
 	int calculateSynthWaitSI(int retval);
 
 	// sets up hardware spi for ili9341 and touch.

@@ -1,0 +1,2 @@
+#define GITVERSION "@GITVERSION@"
+#define GITURL "@GITURL@"

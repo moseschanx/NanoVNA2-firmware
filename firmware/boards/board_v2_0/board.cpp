@@ -16,7 +16,7 @@
 #include <libopencm3/stm32/adc.h>
 
 #include "board.hpp"
-#include "../rfsw.hpp"
+#include "rfsw.hpp"
 
 using namespace mculib;
 using namespace std;

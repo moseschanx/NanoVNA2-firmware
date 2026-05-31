@@ -15,13 +15,13 @@
 #include <libopencm3/stm32/f1/dma.h>
 #include <libopencm3/stm32/adc.h>
 
-#include "../rfsw.hpp"
-#include "../common.hpp"
-#include "../xpt2046.hpp"
+#include "rfsw.hpp"
+#include "common.hpp"
+#include "xpt2046.hpp"
 
-#define BOARD_NAME "NanoVNA V2_1"
-#define BOARD_REVISION (1)
-#define BOARD_REVISION_MAGIC 0xdeadbabb
+#define BOARD_NAME "NanoVNA V2 Plus"
+#define BOARD_REVISION (3)
+#define BOARD_REVISION_MAGIC 0xdeadbabe
 
 //#define BOARD_DISABLE_ECAL
 
@@ -34,13 +34,23 @@
 using namespace mculib;
 using namespace std;
 
-#define BOARD_MEASUREMENT_NPERIODS_NORMAL		14
-#define BOARD_MEASUREMENT_NPERIODS_CALIBRATING	30
-#define BOARD_MEASUREMENT_ECAL_INTERVAL			 5
-#define BOARD_MEASUREMENT_NWAIT_SWITCH			 1
+#ifdef EXPERIMENTAL_NPERIODS
+#define BOARD_MEASUREMENT_NPERIODS_NORMAL  		10
+#define BOARD_MEASUREMENT_NPERIODS_CALIBRATING	23
+#define BOARD_MEASUREMENT_ECAL_INTERVAL 		20
+#define BOARD_MEASUREMENT_NWAIT_SWITCH 			 4
+#define BOARD_MEASUREMENT_MIN_CALIBRATION_AVG	20
+#define BOARD_MEASUREMENT_MAX_CALIBRATION_AVG  255
+#define BOARD_MEASUREMENT_FIRST_POINT_WAIT	   128
+#else
+#define BOARD_MEASUREMENT_NPERIODS_NORMAL		20
+#define BOARD_MEASUREMENT_NPERIODS_CALIBRATING	45
+#define BOARD_MEASUREMENT_ECAL_INTERVAL			 8
+#define BOARD_MEASUREMENT_NWAIT_SWITCH			 5
 #define BOARD_MEASUREMENT_MIN_CALIBRATION_AVG	 4
 #define BOARD_MEASUREMENT_MAX_CALIBRATION_AVG  255
-#define BOARD_MEASUREMENT_FIRST_POINT_WAIT	   196
+#define BOARD_MEASUREMENT_FIRST_POINT_WAIT	   128
+#endif
 
 namespace board {
 
@@ -78,7 +88,7 @@ namespace board {
 	extern uint32_t hseEstimateHz;
 
 	// All boards use a 24Mhz TCXO. It gives best phase noise with the ADF4350
-	static constexpr uint32_t xtalFreqHz = 24000000; 
+	static constexpr uint32_t xtalFreqHz = 24000000;
 	static constexpr freqHz_t DEFAULT_FREQ = 2600000000;
 
 	// ADC parameters, set by boardInit()
@@ -182,7 +192,7 @@ namespace board {
 	// blink the status led
 	void ledPulse();
 
-	int calculateSynthWaitAF( freqHz_t freqHz);
+	int calculateSynthWaitAF(freqHz_t freqHz);
 	int calculateSynthWaitSI(int retval);
 
 	// sets up hardware spi for ili9341 and touch.
